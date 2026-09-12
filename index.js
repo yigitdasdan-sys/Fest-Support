@@ -9,6 +9,10 @@ const client = new Client({
     ]
 });
 
+// Rol ID Sabitleri
+const OTO_ROL_ID = '1547915323649556570';
+const DESTEK_YETKILI_ROL_ID = '1547917093058641961';
+
 // Slash Komutlarını Kaydetme ve Tanımlama
 client.once('ready', async () => {
     console.log(`Bot aktif: ${client.user.tag}`);
@@ -47,6 +51,21 @@ client.once('ready', async () => {
     }
 });
 
+// Oto Rol Sistemi (Sunucuya Yeni Üye Katıldığında)
+client.on('guildMemberAdd', async member => {
+    try {
+        const role = member.guild.roles.cache.get(OTO_ROL_ID);
+        if (role) {
+            await member.roles.add(role);
+            console.log(`${member.user.tag} adlı kullanıcıya otomatik rol verildi.`);
+        } else {
+            console.log('Oto rol bulunamadı, ID kontrol edilmeli.');
+        }
+    } catch (error) {
+        console.error('Oto rol verilirken hata oluştu:', error);
+    }
+});
+
 // Komutlar ve Ticket Etkileşimleri
 client.on('interactionCreate', async interaction => {
     // 1. Slash Komut Yönetimi
@@ -71,9 +90,10 @@ client.on('interactionCreate', async interaction => {
 
         if (interaction.commandName === 'ticket-kurulum') {
             const embed = new EmbedBuilder()
-                .setTitle('🎟️ Destek & İşlem Merkezi')
+                .setTitle('🎟️ Fest - Destek & İşlem Merkezi')
                 .setDescription('Aşağıdaki menüden yapmak istediğiniz işlemi seçerek destek talebi (ticket) oluşturabilirsiniz.')
-                .setColor('Blue');
+                .setColor('Purple')
+                .setImage('https://i.imgur.com/8Q96r5h.png'); // Gönderdiğin logonun bağlantısını buraya ekleyebilirsin
 
             const row = new ActionRowBuilder().addComponents(
                 new StringSelectMenuBuilder()
@@ -105,7 +125,7 @@ client.on('interactionCreate', async interaction => {
             const guild = interaction.guild;
             const channelName = `${ticketType}-${interaction.user.username}`;
 
-            // Ticket kanalı oluşturma
+            // Ticket kanalı oluşturma ve yetkili rolünü ekleme
             const ticketChannel = await guild.channels.create({
                 name: channelName,
                 type: ChannelType.GuildText,
@@ -116,6 +136,10 @@ client.on('interactionCreate', async interaction => {
                     },
                     {
                         id: interaction.user.id,
+                        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory],
+                    },
+                    {
+                        id: DESTEK_YETKILI_ROL_ID,
                         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory],
                     },
                 ],
@@ -129,12 +153,14 @@ client.on('interactionCreate', async interaction => {
                     .setEmoji('🔒')
             );
 
-            await ticketChannel.send({ content: hosgeldinMesajiYaz(selectedValue, interaction.user), components: [closeButton] });
+            const hosgeldinMetni = `${hosgeldinMesajiYaz(selectedValue, interaction.user)}\nYetkili Ekip: <@&${DESTEK_YETKILI_ROL_ID}>`;
+
+            await ticketChannel.send({ content: hosgeldinMetni, components: [closeButton] });
             await interaction.editReply({ content: `Ticket kanalınız açıldı: ${ticketChannel}` });
         }
     }
 
-    // 3. Ticket Kapatma Butonu
+    // 3. Ticket Kapatma Butonu (5 Saniye Sonra Silme)
     if (interaction.isButton()) {
         if (interaction.customId === 'close_ticket') {
             await interaction.reply('Bu kanal 5 saniye içinde siliniyor...');
@@ -146,7 +172,7 @@ client.on('interactionCreate', async interaction => {
 });
 
 function hosgeldinMesajiYaz(type, user) {
-    if (type === 'ticket_satin_alim') return `Merhaba ${user}, satın alım talebiniz alındı. Yetkililer birazdan ilgilenecektir.`;
+    if (type === 'ticket_satin_alim') return `Merhaba ${user}, satın alım talebiniz alındı. Yetkililerimiz birazdan ilgilenecektir.`;
     if (type === 'ticket_partner') return `Merhaba ${user}, partnerlik şartları için yetkiliyi bekleyin.`;
     return `Merhaba ${user}, destek ekibimiz en kısa sürede sizinle ilgilenecektir.`;
 }
