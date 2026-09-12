@@ -195,3 +195,19 @@ function hosgeldinMesajiYaz(type, user) {
 }
 
 client.login(process.env.TOKEN);
+// --- YENİ EKLEDİĞİMİZ KISIM (En üste ekle, aşağıdakilere dokunma) ---
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.send('Bot aktif ve çalışıyor!');
+});
+
+app.listen(port, () => {
+  console.log(`Web sunucusu ${port} portunda çalışıyor.`);
+});
+// ------------------------------------------------------------------
+
+// --- BURADA SENİN ESKİ BOT KODLARIN AYNEN KALIYOR (Hiçbir şey silinmiyor) ---
+// (Discord/Telegram bot kodların, client.login kısımları vs. hepsi burada alt alta durmaya devam edecek)
